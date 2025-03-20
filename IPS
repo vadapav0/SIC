@@ -1,0 +1,83 @@
+Prac6:
+
+All router:
+
+line console 0
+password compa55
+login
+exit
+
+line vty 0 4 
+password vtypa55
+login 
+exit
+
+enable secret enpa55
+exit
+
+ip domain-name ccnasecurity.com
+userdata admin secret adminpa55
+line vty 0 4
+login local
+exit
+
+crypto key generate rsa
+
+ip route 10.2.2.0 255.255.255.252 10.1.1.2
+ip route 192.168.3.0 255.255.255.0 10.1.1.2
+
+ip route 192.168.1.0 255.255.255.0 10.1.1.1
+ip route 192.168.3.0 255.255.255.0 10.2.2.1
+
+ip route 192.168.1.0 255.255.255.0 10.2.2.2
+ip route 10.1.1.0 255.255.255.252 10.2.2.2
+
+
+ -----------------------------Create the Firewall Zones on R3 -------------------------------
+
+R3(config)# license boot module c1900 technology-package securityk9
+run start 
+reload
+
+
+R3(config)# zone security IN-ZONE 
+exit
+
+R3(config-sec-zone)# zone security OUT-ZONE 
+R3(config-seczone)# exit
+
+-----------------------------Identify Traffic Using a Class-Map -----------------------
+
+R3(config)# access-list 101 permit ip 192.168.3.0 0.0.0.255 any
+3(config)# class-map type inspect match-all IN-NET-CLASS-MAP
+R3(config-cmap)# match access-group 101
+R3(config-cmap)# exit
+
+------------------------------------------Specify Firewall Policies ----------------------------
+
+R3(config)# policy-map type inspect IN-2-OUT-PMAP
+R3(config-pmap)# class type inspect IN-NET-CLASS-MAP
+
+-------------------------------------Apply Firewall Policies -----------------------------------
+
+R3(config)# zone-pair security IN-2-OUT-ZPAIR source IN-ZONE destination OUTZONE
+
+R3(config-sec-zone-pair)# service-policy type inspect IN-2-OUT-PMAP
+R3(config-sec-zone-pair)# exit
+
+R3(config)# interface g0/1
+R3(config-if)# zone-member security IN-ZONE
+R3(config-if)# exit
+R3(config)# interface s0/0/1
+R3(config-if)# zone-member security OUT-ZONE 
+R3(config-if)# exit
+exit
+
+copy run start
+reload
+
+-
+--------------------------------Test Firewall Functionality from IN-ZONE to OUT-ZONE ------------------------
+
+R3# show policy-map type inspect zone-pair sessions
+
